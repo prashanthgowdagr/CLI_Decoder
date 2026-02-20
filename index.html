@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:;" />
+        content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://generativelanguage.googleapis.com;" />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <meta http-equiv="Referrer-Policy" content="no-referrer" />
     <title>CLIDecoder — Command Explainer</title>
@@ -13,7 +13,7 @@
         content="Paste any CLI command and get a colour-coded, part-by-part explanation instantly — no API key needed." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
-        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap"
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap"
         rel="stylesheet" />
     <link rel="stylesheet" href="css/style.css" />
 </head>
@@ -27,21 +27,52 @@
                 <div class="logo-icon" aria-hidden="true">&gt;_</div>
                 <div class="logo-text">CLI<span>Decoder</span></div>
             </div>
-            <button class="theme-btn" onclick="toggleTheme()" id="themeBtn" aria-label="Toggle colour theme">
-                <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-                <span id="themeLabel">Light Mode</span>
-            </button>
+            <div class="header-actions">
+                <button class="ai-btn" id="aiToggleBtn" aria-label="Gemini AI Settings">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                        stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+                    </svg>
+                    <span>AI Analysis</span>
+                </button>
+                <button class="theme-btn" id="themeBtn" aria-label="Toggle colour theme">
+                    <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    <span id="themeLabel">Light Mode</span>
+                </button>
+            </div>
         </header>
+
+        <!-- ── AI SETTINGS ────────────────────────────────────────────── -->
+        <div id="aiSettings" class="ai-settings-panel" style="display:none">
+            <div class="settings-header">
+                <h3>Gemini AI Integration</h3>
+                <button class="close-btn" id="aiSettingsCloseBtn">&times;</button>
+            </div>
+            <p>Enhance explanations with Google Gemini. Your API key is stored locally in your browser.</p>
+            <div class="input-group">
+                <input type="password" id="geminiApiKey" placeholder="Enter your Gemini API Key" />
+                <div class="btn-group">
+                    <button class="save-btn" id="saveAIKeyBtn">Save Key</button>
+                    <button class="test-btn" id="testAIKeyBtn">Test Connection</button>
+                </div>
+            </div>
+            <div id="aiConnStatus" class="ai-conn-status"></div>
+            <div class="api-help">
+                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Get a free Gemini API
+                    Key →</a>
+            </div>
+        </div>
 
         <!-- ── HERO ────────────────────────────────────────────────────── -->
         <div class="hero">
-            <h1>Decode any <em>CLI command</em><br />in plain English</h1>
-            <p>Paste a command below and get a colour-coded, part-by-part breakdown — instantly, in your browser, with
-                <strong>no API key</strong> needed.
+            <h1>CLI Decoder</h1>
+            <p>Paste a command below to get a color-coded, part-by-part breakdown.
+                <strong>No API key</strong> needed.
             </p>
         </div>
 
@@ -64,8 +95,7 @@
                 <input id="cmdInput" class="cmd-input" type="text"
                     placeholder="e.g. kubectl get pods -n production --watch" autocomplete="off" autocorrect="off"
                     autocapitalize="off" spellcheck="false" maxlength="500" aria-label="CLI command to explain" />
-                <button class="explain-btn" id="explainBtn" onclick="explainCommand()" type="button"
-                    aria-label="Explain this command">
+                <button class="explain-btn" id="explainBtn" type="button" aria-label="Explain this command">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
                         stroke-width="2.2" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -85,7 +115,39 @@
 
         <!-- ── RESULTS ─────────────────────────────────────────────────── -->
         <div id="results" style="display:none" aria-live="polite">
-            <div class="summary-bar" id="summaryBar"></div>
+            <div class="summary-row">
+                <div class="summary-bar" id="summaryBar"></div>
+                <button id="aiAskBtn" class="ai-ask-btn" style="display:none">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                        stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                    </svg>
+                    AI Insights
+                </button>
+            </div>
+
+            <div id="aiAnalysisBox" class="ai-analysis-box" style="display:none">
+                <div class="ai-analysis-header">
+                    <div class="ai-title">Gemini Analysis</div>
+                    <div class="ai-header-actions">
+                        <button class="icon-btn" id="minMaxAIAnalysisBtn" aria-label="Toggle AI Summary"
+                            title="Minimize/Maximize">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="chevron-icon">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </button>
+                        <button class="icon-btn close-btn" id="closeAIAnalysisBtn" aria-label="Close"
+                            title="Close">&times;</button>
+                    </div>
+                </div>
+                <div id="aiContent" class="ai-content">
+                    <div class="ai-loader">Analyzing command structure...</div>
+                </div>
+            </div>
+
             <div id="unknownNotice"></div>
 
             <!-- Explainshell-style token bar -->
@@ -120,7 +182,7 @@
             <div class="card-area" id="cardArea"></div>
         </div>
 
-        <footer>CLIDecoder &middot; 100% offline &middot; no data sent anywhere &middot; open in any browser</footer>
+        <footer>CLIDecoder &middot; Offline-first &middot; AI analysis optional &middot; Open source</footer>
     </div>
 
     <!-- ── Data files (one per tool — add new tools here) ────────────── -->
@@ -132,6 +194,8 @@
     <script src="data/azure.js"></script>
     <script src="data/gcp.js"></script>
     <script src="data/terraform.js"></script>
+    <script src="data/npm.js"></script>
+    <script src="data/python.js"></script>
 
     <!-- ── Core engine ───────────────────────────────────────────────── -->
     <script src="js/parser.js"></script>

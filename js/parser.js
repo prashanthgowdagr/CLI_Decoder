@@ -35,9 +35,18 @@
     /* ── Tokeniser ─────────────────────────────────────────────────── */
     function tokenise(input) {
         const tokens = [];
-        let cur = '', inS = false, inD = false;
+        let cur = '', inS = false, inD = false, escaped = false;
         for (let i = 0; i < input.length; i++) {
             const ch = input[i];
+            if (escaped) {
+                cur += ch;
+                escaped = false;
+                continue;
+            }
+            if (ch === '\\' && !inS) {
+                escaped = true;
+                continue;
+            }
             if (ch === "'" && !inD) { inS = !inS; cur += ch; }
             else if (ch === '"' && !inS) { inD = !inD; cur += ch; }
             else if (ch === ' ' && !inS && !inD) { if (cur) tokens.push(cur); cur = ''; }
@@ -116,6 +125,7 @@
     }
 
     function describeValue(v) {
+        if (v.startsWith('$')) return 'Shell environment variable';
         if (/^s3:\/\//.test(v)) return 'Amazon S3 bucket path';
         if (/^gs:\/\//.test(v)) return 'Google Cloud Storage bucket path';
         if (/^https?:\/\//.test(v)) return 'Web URL';
@@ -127,7 +137,7 @@
         if (/^\//.test(v)) return `Absolute filesystem path`;
         if (/^\.\.?\//.test(v)) return 'Relative filesystem path';
         if (/^~\//.test(v)) return 'Home directory path';
-        if (v.includes(':')) return 'Key:value pair or host:port';
+        if (v.includes(':') && !v.includes(' ')) return 'Key:value pair or host:port';
         if (/^[a-zA-Z0-9_.-]+\.[a-zA-Z]+$/.test(v)) return 'Filename';
         return 'Value';
     }
@@ -168,6 +178,7 @@
 
     /* ── Guess positional type ─────────────────────────────────────── */
     function guessPositionalType(tok) {
+        if (tok.startsWith('$')) return 'val';
         if (/^s3:\/\/|^gs:\/\/|^https?:\/\/|^arn:|^\/|^\.\.?\/|^~\//.test(tok)) return 'val';
         if (/^[a-zA-Z0-9_.-]+\.[a-zA-Z]+$/.test(tok)) return 'val'; // file.ext
         return 'arg';
@@ -182,7 +193,6 @@
         let cmdFound = false;
         let subCount = 0;
         let nextIsVal = false;
-        const MAX_SUB = 3; // aws s3 cp, gcloud container clusters, etc.
 
         for (let i = 0; i < rawTokens.length; i++) {
             const tok = rawTokens[i];
@@ -226,16 +236,23 @@
             }
 
             // ── Subcommand ──────────────────────────────────
-            if (kbEntry && subCount < MAX_SUB) {
+            if (kbEntry) {
                 const subDesc = lookupSub(kbEntry, tok);
                 if (subDesc) {
                     result.push({ text: tok, type: 'sub', desc: subDesc });
                     subCount++;
                     continue;
                 }
-                // First positional after a compound cmd with sub-entries
-                if (subCount === 0 && kbEntry.sub && !tok.startsWith('/') && !tok.startsWith('.')) {
-                    result.push({ text: tok, type: 'sub', desc: `Subcommand of ${result.find(t => t.type === 'cmd')?.text || ''}` });
+                const knownMulti = new Set(['aws', 'gcloud', 'docker', 'kubectl', 'git', 'az', 'terraform', 'helm']);
+                // Fix: Find the most recent command in this pipe sequence
+                let lastCmd = null;
+                for (let j = result.length - 1; j >= 0; j--) {
+                    if (result[j].type === 'pipe') break;
+                    if (result[j].type === 'cmd') { lastCmd = result[j].text; break; }
+                }
+                const cmdName = lastCmd ? lastCmd.replace(/^.*\//, '') : '';
+                if (subCount < 3 && knownMulti.has(cmdName) && !tok.startsWith('-') && !tok.includes('/') && !tok.includes('.')) {
+                    result.push({ text: tok, type: 'sub', desc: `Subcommand / Action for ${cmdName}` });
                     subCount++;
                     continue;
                 }
