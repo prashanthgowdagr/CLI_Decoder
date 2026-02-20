@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:;" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="Referrer-Policy" content="no-referrer" />
+    <title>CLIDecoder — Command Explainer</title>
+    <meta name="description"
+        content="Paste any CLI command and get a colour-coded, part-by-part explanation instantly — no API key needed." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body>
+    <div class="page">
+
+        <!-- ── HEADER ──────────────────────────────────────────────────── -->
+        <header>
+            <div class="logo">
+                <div class="logo-icon" aria-hidden="true">&gt;_</div>
+                <div class="logo-text">CLI<span>Decoder</span></div>
+            </div>
+            <button class="theme-btn" onclick="toggleTheme()" id="themeBtn" aria-label="Toggle colour theme">
+                <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <span id="themeLabel">Light Mode</span>
+            </button>
+        </header>
+
+        <!-- ── HERO ────────────────────────────────────────────────────── -->
+        <div class="hero">
+            <h1>Decode any <em>CLI command</em><br />in plain English</h1>
+            <p>Paste a command below and get a colour-coded, part-by-part breakdown — instantly, in your browser, with
+                <strong>no API key</strong> needed.
+            </p>
+        </div>
+
+        <!-- ── PLATFORM CHIPS ──────────────────────────────────────────── -->
+        <div class="platforms" id="platforms" role="group" aria-label="Select platform context">
+            <button class="chip active" data-platform="linux" type="button">🐧 Linux</button>
+            <button class="chip" data-platform="docker" type="button">🐳 Docker</button>
+            <button class="chip" data-platform="git" type="button">🌿 Git</button>
+            <button class="chip" data-platform="kubernetes" type="button">☸️ Kubernetes</button>
+            <button class="chip" data-platform="aws" type="button">☁️ AWS</button>
+            <button class="chip" data-platform="azure" type="button">🔷 Azure</button>
+            <button class="chip" data-platform="gcp" type="button">🌐 GCP</button>
+            <button class="chip" data-platform="terraform" type="button">⚙️ Terraform</button>
+        </div>
+
+        <!-- ── INPUT ───────────────────────────────────────────────────── -->
+        <div class="input-card">
+            <div class="input-label">// enter command</div>
+            <div class="input-row">
+                <input id="cmdInput" class="cmd-input" type="text"
+                    placeholder="e.g. kubectl get pods -n production --watch" autocomplete="off" autocorrect="off"
+                    autocapitalize="off" spellcheck="false" maxlength="500" aria-label="CLI command to explain" />
+                <button class="explain-btn" id="explainBtn" onclick="explainCommand()" type="button"
+                    aria-label="Explain this command">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                        stroke-width="2.2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    Explain
+                </button>
+            </div>
+            <div class="char-counter" id="charCounter" aria-live="polite">0 / 500</div>
+        </div>
+
+        <!-- ── EXAMPLES ────────────────────────────────────────────────── -->
+        <div class="examples-label">// quick examples</div>
+        <div class="examples-row" id="examplesRow" role="list" aria-label="Example commands"></div>
+
+        <!-- ── ERROR ───────────────────────────────────────────────────── -->
+        <div class="error-msg" id="errorMsg" role="alert" aria-live="assertive"></div>
+
+        <!-- ── RESULTS ─────────────────────────────────────────────────── -->
+        <div id="results" style="display:none" aria-live="polite">
+            <div class="summary-bar" id="summaryBar"></div>
+            <div id="unknownNotice"></div>
+
+            <!-- Explainshell-style token bar -->
+            <div class="token-bar" id="tokenBar" aria-label="Colour-coded command breakdown"></div>
+
+            <!-- Legend -->
+            <div class="legend" aria-label="Token type legend">
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:var(--clr-cmd)" aria-hidden="true"></div>command
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:var(--clr-sub)" aria-hidden="true"></div>subcommand
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:var(--clr-flag)" aria-hidden="true"></div>flag / option
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:var(--clr-arg)" aria-hidden="true"></div>argument
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:var(--clr-val)" aria-hidden="true"></div>value
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:var(--clr-pipe)" aria-hidden="true"></div>pipe / redirect
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:var(--clr-other)" aria-hidden="true"></div>other
+                </div>
+            </div>
+
+            <!-- Description cards -->
+            <div class="card-area" id="cardArea"></div>
+        </div>
+
+        <footer>CLIDecoder &middot; 100% offline &middot; no data sent anywhere &middot; open in any browser</footer>
+    </div>
+
+    <!-- ── Data files (one per tool — add new tools here) ────────────── -->
+    <script src="data/linux.js"></script>
+    <script src="data/docker.js"></script>
+    <script src="data/git.js"></script>
+    <script src="data/kubernetes.js"></script>
+    <script src="data/aws.js"></script>
+    <script src="data/azure.js"></script>
+    <script src="data/gcp.js"></script>
+    <script src="data/terraform.js"></script>
+
+    <!-- ── Core engine ───────────────────────────────────────────────── -->
+    <script src="js/parser.js"></script>
+    <script src="js/renderer.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>
